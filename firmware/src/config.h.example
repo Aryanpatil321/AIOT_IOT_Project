@@ -1,0 +1,59 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// Wi-Fi Configuration
+static const char* WIFI_SSID = "YOUR_WIFI_SSID";
+static const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+
+// MQTT Broker Configuration
+static const char* MQTT_SERVER = "192.168.1.XXX"; // Update with your PC/Laptop IP
+static const int MQTT_PORT = 1883;
+static const char* MQTT_CLIENT_ID = "aiot-machine-safety";
+
+// MQTT Topics (as per README)
+static const char* TOPIC_SENSORS = "machine/sensors";
+static const char* TOPIC_PREDICTION = "machine/prediction";
+static const char* TOPIC_COMMAND = "machine/command";
+static const char* TOPIC_STATUS = "machine/status";
+static const char* TOPIC_ALERTS = "machine/alerts";
+
+// Sensor GPIO Pins
+#define MPU6050_SDA 21
+#define MPU6050_SCL 22
+#define DS18B20_PIN 4
+#define ACS712_PIN 34  // ADC1 (GPIO34)
+#define RELAY_PIN   27
+
+// Sensor & Feature Extraction Settings
+#define SENSOR_WINDOW_MS  1000  // 1 second window
+#define VIB_SAMPLE_RATE_HZ 125  // Vibration sampling rate
+#define VIB_SAMPLES_PER_WINDOW (SENSOR_WINDOW_MS * VIB_SAMPLE_RATE_HZ / 1000) // ~125 samples
+
+// ADC Calibration for ACS712 (30A variant by default)
+// NOTE: ACS712 output is ratiometric to its supply. Wiring uses a 5V supply,
+// so the zero-current midpoint is ~2.5V. calibrateACS712() overrides this at boot.
+#define ACS712_SENSITIVITY_V_PER_A  0.066f  // 66mV/A for ACS712-30A (at 5V supply)
+#define ACS712_VREF_V               2.5f    // Mid-point (zero current reference)
+#define ACS712_ADC_RESOLUTION       4095.0f // 12-bit ADC on ESP32
+#define ACS712_ADC_VREF            3.3f    // ESP32 ADC reference
+
+// Safety & Control Settings
+#define CRITICAL_DEBOUNCE_COUNT     2      // Consecutive critical predictions before cutoff
+#define ML_TIMEOUT_MS              3000    // Timeout if no prediction/command (ms)
+#define STATUS_PUBLISH_INTERVAL_MS 1000    // Heartbeat interval
+#define RELAY_OFF_ON_BOOT          true    // Fail-safe: relay OFF at startup
+
+// Local Safety Fallback Thresholds (if ML service disconnects)
+// These are conservative rule-based thresholds as backup only
+#define FALLBACK_VIB_RMS_CRIT      0.9f    // g
+#define FALLBACK_CURRENT_CRIT       1.8f    // A
+#define FALLBACK_TEMP_CRIT         65.0f    // °C
+#define FALLBACK_CONSECUTIVE_COUNT  3       // Consecutive violations
+
+// Wi-Fi Reconnect Settings
+#define WIFI_RECONNECT_DELAY_MS    5000
+
+// MQTT Reconnect Settings
+#define MQTT_RECONNECT_DELAY_MS    2000
+
+#endif // CONFIG_H

@@ -1,0 +1,55 @@
+# AIoT Predictive Safety System
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.ml-venv/
+venv/
+.pytest_cache/
+
+# Config with secrets
+ml_service/config.yaml
+dashboard/config.yaml
+firmware/src/config.h
+
+# Models (large binaries - keep metrics, ignore models if needed)
+# models/*.joblib
+
+# Data (keep dirs, ignore captured data)
+data/raw/*.csv
+data/processed/*.csv
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# PlatformIO
+firmware/.pio/
+.pio/
+
+# Logs
+*.log
+# Large external datasets
+data/external/mendeley/*.zip
+
+# Python cache files
+__pycache__/
+*.pyc
+# Config with secrets
+ml_service/config.yaml
+dashboard/config.yaml
+firmware/src/config.h
+
+# Data
+data/raw/*.csv
+data/processed/*.csv
+data/external/mendeley/*.zip
+
+# Python cache
+__pycache__/
+*.pyc

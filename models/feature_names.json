@@ -1,0 +1,25 @@
+{
+  "features": [
+    "temperature",
+    "vibration_RMS",
+    "vibration_peak",
+    "current"
+  ],
+  "classes": [
+    "BEARING_INNER",
+    "BEARING_OUTER",
+    "CRITICAL",
+    "IMBALANCE",
+    "MISALIGNMENT",
+    "NORMAL",
+    "OVERHEATING",
+    "OVERLOAD"
+  ],
+  "feature_importances": {
+    "temperature": 0.29349923457941224,
+    "vibration_RMS": 0.24813842913078246,
+    "vibration_peak": 0.2858144345013245,
+    "current": 0.17254790178848095
+  },
+  "calibrated": true
+}

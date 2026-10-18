@@ -1,0 +1,146 @@
+{
+  "BEARING_INNER": {
+    "temperature": {
+      "mean": 28.9339,
+      "std": 1.0704
+    },
+    "vibration_RMS": {
+      "mean": 16.7536,
+      "std": 2.4545
+    },
+    "vibration_peak": {
+      "mean": 104.5566,
+      "std": 43.2275
+    },
+    "current": {
+      "mean": 2.3297,
+      "std": 0.1643
+    }
+  },
+  "BEARING_OUTER": {
+    "temperature": {
+      "mean": 30.8839,
+      "std": 1.4067
+    },
+    "vibration_RMS": {
+      "mean": 13.6438,
+      "std": 4.5208
+    },
+    "vibration_peak": {
+      "mean": 51.5601,
+      "std": 16.3241
+    },
+    "current": {
+      "mean": 2.4686,
+      "std": 0.2063
+    }
+  },
+  "CRITICAL": {
+    "temperature": {
+      "mean": 84.9928,
+      "std": 9.5053
+    },
+    "vibration_RMS": {
+      "mean": 1.7928,
+      "std": 0.4043
+    },
+    "vibration_peak": {
+      "mean": 4.2598,
+      "std": 0.8862
+    },
+    "current": {
+      "mean": 2.608,
+      "std": 0.471
+    }
+  },
+  "IMBALANCE": {
+    "temperature": {
+      "mean": 33.863,
+      "std": 6.3527
+    },
+    "vibration_RMS": {
+      "mean": 1.5375,
+      "std": 0.7127
+    },
+    "vibration_peak": {
+      "mean": 4.5324,
+      "std": 2.5157
+    },
+    "current": {
+      "mean": 1.4635,
+      "std": 0.8503
+    }
+  },
+  "MISALIGNMENT": {
+    "temperature": {
+      "mean": 31.0527,
+      "std": 0.7585
+    },
+    "vibration_RMS": {
+      "mean": 3.4903,
+      "std": 1.2832
+    },
+    "vibration_peak": {
+      "mean": 13.9181,
+      "std": 6.1079
+    },
+    "current": {
+      "mean": 2.3042,
+      "std": 0.1656
+    }
+  },
+  "NORMAL": {
+    "temperature": {
+      "mean": 34.3434,
+      "std": 5.0474
+    },
+    "vibration_RMS": {
+      "mean": 0.6261,
+      "std": 0.8778
+    },
+    "vibration_peak": {
+      "mean": 1.8841,
+      "std": 2.8366
+    },
+    "current": {
+      "mean": 0.8965,
+      "std": 0.7502
+    }
+  },
+  "OVERHEATING": {
+    "temperature": {
+      "mean": 78.0195,
+      "std": 7.6438
+    },
+    "vibration_RMS": {
+      "mean": 0.292,
+      "std": 0.0726
+    },
+    "vibration_peak": {
+      "mean": 0.6425,
+      "std": 0.1357
+    },
+    "current": {
+      "mean": 0.6958,
+      "std": 0.1239
+    }
+  },
+  "OVERLOAD": {
+    "temperature": {
+      "mean": 56.1548,
+      "std": 5.6537
+    },
+    "vibration_RMS": {
+      "mean": 0.4616,
+      "std": 0.1016
+    },
+    "vibration_peak": {
+      "mean": 1.0823,
+      "std": 0.216
+    },
+    "current": {
+      "mean": 1.6924,
+      "std": 0.2822
+    }
+  }
+}

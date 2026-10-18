@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AIoT Predictive Safety System for Small DC Machines - Real-time ML Condition Monitoring, Explainable AI & Autonomous Actuation." />
+  <title>AIoT Predictive Safety Cockpit | Machine Health & Autonomous Protection</title>
+  
+  <!-- Modern Typography from Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Custom Styling -->
+  <link rel="stylesheet" href="/static/css/style.css" />
+  
+  <!-- Chart.js 4.4 (vendored locally so the demo works offline) -->
+  <script src="/static/js/chart.umd.min.js"></script>
+</head>
+<body class="theme-dark">
+  <!-- Emergency Alert Banner (Shown on Critical Shutdown) -->
+  <aside id="emergency-banner" class="emergency-banner hidden" role="alert" aria-live="assertive">
+    <div class="banner-content">
+      <div class="banner-icon-pulse">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <div class="banner-text">
+        <strong id="banner-title">CRITICAL FAULT DETECTED — EMERGENCY RELAY DISCONNECTED</strong>
+        <p id="banner-desc">The AI safety automaton executed an automated cutoff to prevent motor burnout. Manual inspection and reset required.</p>
+      </div>
+      <button id="banner-reset-btn" class="banner-btn" type="button">Acknowledge & Reset</button>
+    </div>
+  </aside>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-badge">
+        <span class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </span>
+        <div class="brand-titles">
+          <h1>AIoT Predictive Safety System</h1>
+          <span class="subhead">Small Machine Condition Monitoring &bull; Multi-Sensor AI Protection</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="system-time-chip">
+        <span class="clock-icon">⏱</span>
+        <span id="live-clock">--:--:--</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div id="connection-pill" class="status-pill status-pill-neutral">
+        <span class="pulse-dot"></span>
+        <span id="connection-text">Connecting...</span>
+      </div>
+      <div class="header-telemetry-meta">
+        <span id="device-meta">ESP32 &bull; 192.168.1.142</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Cockpit Layout -->
+  <main class="cockpit-container">
+    <!-- Row 1: High Level Health & Machine State Cards -->
+    <section class="overview-grid">
+      <!-- Health Score Radial Dial -->
+      <article class="cockpit-card health-card">
+        <header class="card-header">
+          <h2 class="card-title">Machine Health Index</h2>
+          <span class="card-badge">Dynamic 0–100</span>
+        </header>
+        <div class="health-dial-container">
+          <div class="svg-dial-wrapper">
+            <svg class="radial-gauge" viewBox="0 0 160 160">
+              <circle class="gauge-bg" cx="80" cy="80" r="68"></circle>
+              <circle id="gauge-bar" class="gauge-bar" cx="80" cy="80" r="68"></circle>
+            </svg>
+            <div class="gauge-center-content">
+              <span id="health-value" class="gauge-score">98</span>
+              <span id="health-tag" class="gauge-rating">OPTIMAL</span>
+            </div>
+          </div>
+        </div>
+        <footer class="card-footer">
+          <span class="footer-legend">Risk penalties deducted dynamically on fault probabilities</span>
+        </footer>
+      </article>
+
+      <!-- Condition & Operational State -->
+      <article class="cockpit-card condition-card">
+        <header class="card-header">
+          <h2 class="card-title">Operational Condition</h2>
+          <span id="condition-chip" class="pill-badge pill-normal">NORMAL</span>
+        </header>
+        <div class="condition-body">
+          <div class="condition-display">
+            <div id="condition-icon-box" class="condition-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <div class="condition-text-group">
+              <div id="primary-fault-title" class="primary-status-title">Nominal Operation</div>
+              <div id="condition-desc" class="primary-status-desc">Smooth rotation &bull; Balanced rotor &bull; Normal thermal dissipation</div>
+            </div>
+          </div>
+          <div class="confidence-bar-wrapper">
+            <div class="confidence-label-row">
+              <span>Model Confidence</span>
+              <strong id="confidence-percentage">99.4%</strong>
+            </div>
+            <div class="progress-track">
+              <div id="confidence-fill" class="progress-fill" style="width: 99%;"></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Actuator & Relay Interlock State -->
+      <article class="cockpit-card relay-card">
+        <header class="card-header">
+          <h2 class="card-title">Relay Safety Interlock</h2>
+          <span id="relay-pill" class="pill-badge pill-normal">ENERGIZED (ON)</span>
+        </header>
+        <div class="relay-body">
+          <div class="relay-graphic">
+            <div id="relay-switch-indicator" class="relay-switch-indicator state-on">
+              <span class="switch-glow"></span>
+              <span id="relay-status-text" class="switch-label">MOTOR RUNNING</span>
+            </div>
+          </div>
+          <div class="relay-metadata">
+            <div class="meta-row">
+              <span class="meta-label">Protection Mode:</span>
+              <span class="meta-val">Autonomous Cutoff</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Debounce Guard:</span>
+              <span class="meta-val">2 Consecutive Cycles</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Latch Status:</span>
+              <span id="latch-status-val" class="meta-val text-green">ARMED / NORMAL</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Multi-Class Fault Probability Breakdown -->
+      <article class="cockpit-card class-dist-card">
+        <header class="card-header">
+          <h2 class="card-title">Fault Probability Map</h2>
+          <span class="card-badge">Random Forest</span>
+        </header>
+        <div class="class-prob-list">
+          <div class="prob-row">
+            <span class="prob-name">NORMAL</span>
+            <div class="prob-bar-track"><div id="prob-NORMAL" class="prob-bar-fill fill-green" style="width: 98%;"></div></div>
+            <span id="val-NORMAL" class="prob-val">98%</span>
+          </div>
+          <div class="prob-row">
+            <span class="prob-name">IMBALANCE</span>
+            <div class="prob-bar-track"><div id="prob-IMBALANCE" class="prob-bar-fill fill-cyan" style="width: 0%;"></div></div>
+            <span id="val-IMBALANCE" class="prob-val">0%</span>
+          </div>
+          <div class="prob-row">
+            <span class="prob-name">OVERLOAD</span>
+            <div class="prob-bar-track"><div id="prob-OVERLOAD" class="prob-bar-fill fill-amber" style="width: 1%;"></div></div>
+            <span id="val-OVERLOAD" class="prob-val">1%</span>
+          </div>
+          <div class="prob-row">
+            <span class="prob-name">OVERHEATING</span>
+            <div class="prob-bar-track"><div id="prob-OVERHEATING" class="prob-bar-fill fill-orange" style="width: 1%;"></div></div>
+            <span id="val-OVERHEATING" class="prob-val">1%</span>
+          </div>
+          <div class="prob-row">
+            <span class="prob-name">BEARING_INNER</span>
+            <div class="prob-bar-track"><div id="prob-BEARING_INNER" class="prob-bar-fill fill-amber" style="width: 0%;"></div></div>
+            <span id="val-BEARING_INNER" class="prob-val">0%</span>
+          </div>
+          <div class="prob-row">
+            <span class="prob-name">BEARING_OUTER</span>
+            <div class="prob-bar-track"><div id="prob-BEARING_OUTER" class="prob-bar-fill fill-amber" style="width: 0%;"></div></div>
+            <span id="val-BEARING_OUTER" class="prob-val">0%</span>
+          </div>
+          <div class="prob-row">
+            <span class="prob-name">MISALIGNMENT</span>
+            <div class="prob-bar-track"><div id="prob-MISALIGNMENT" class="prob-bar-fill fill-cyan" style="width: 0%;"></div></div>
+            <span id="val-MISALIGNMENT" class="prob-val">0%</span>
+          </div>
+          <div class="prob-row">
+            <span class="prob-name">CRITICAL</span>
+            <div class="prob-bar-track"><div id="prob-CRITICAL" class="prob-bar-fill fill-red" style="width: 0%;"></div></div>
+            <span id="val-CRITICAL" class="prob-val">0%</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Row 2: Live Telemetry Gauges (4 Sensor Channels) -->
+    <section class="telemetry-grid">
+      <!-- Temperature Card -->
+      <div class="sensor-card">
+        <div class="sensor-icon-circle icon-temp">🌡</div>
+        <div class="sensor-data-col">
+          <div class="sensor-label">Motor Temperature (DS18B20)</div>
+          <div class="sensor-val-row">
+            <span id="sensor-temp" class="sensor-value">--.-</span>
+            <span class="sensor-unit">°C</span>
+          </div>
+          <div class="sensor-sub-meta">Threshold &lt; 65°C &bull; Normal: 30–42°C</div>
+        </div>
+      </div>
+
+      <!-- Vibration RMS Card -->
+      <div class="sensor-card">
+        <div class="sensor-icon-circle icon-vib">〰️</div>
+        <div class="sensor-data-col">
+          <div class="sensor-label">Vibration RMS (MPU6050)</div>
+          <div class="sensor-val-row">
+            <span id="sensor-vib-rms" class="sensor-value">-.---</span>
+            <span class="sensor-unit">g</span>
+          </div>
+          <div class="sensor-sub-meta">ISO 10816 Zone A/B &bull; Crit: 0.9g</div>
+        </div>
+      </div>
+
+      <!-- Vibration Peak Card -->
+      <div class="sensor-card">
+        <div class="sensor-icon-circle icon-peak">⚡</div>
+        <div class="sensor-data-col">
+          <div class="sensor-label">Vibration Peak (Crest Factor)</div>
+          <div class="sensor-val-row">
+            <span id="sensor-vib-peak" class="sensor-value">-.---</span>
+            <span class="sensor-unit">g</span>
+          </div>
+          <div class="sensor-sub-meta">Shock & Impact Transient &bull; Crit: 3.0g</div>
+        </div>
+      </div>
+
+      <!-- Current Sensor Card -->
+      <div class="sensor-card">
+        <div class="sensor-icon-circle icon-current">🔋</div>
+        <div class="sensor-data-col">
+          <div class="sensor-label">Motor Current (ACS712)</div>
+          <div class="sensor-val-row">
+            <span id="sensor-current" class="sensor-value">-.---</span>
+            <span class="sensor-unit">A</span>
+          </div>
+          <div class="sensor-sub-meta">No-load: 0.45A &bull; Stall Crit: 2.2A</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 3: Live Sensor Trend Chart -->
+    <section class="cockpit-card chart-card">
+      <header class="card-header chart-header">
+        <div class="chart-header-left">
+          <h2 class="card-title">Real-Time Multi-Sensor Telemetry Streams</h2>
+          <span class="card-subtitle">Synchronous windowed sliding telemetry (1000ms acquisition window)</span>
+        </div>
+        <div class="chart-legend-custom">
+          <span class="legend-item"><span class="dot dot-temp"></span> Temperature (°C)</span>
+          <span class="legend-item"><span class="dot dot-vib"></span> Vib RMS (g)</span>
+          <span class="legend-item"><span class="dot dot-curr"></span> Current (A)</span>
+        </div>
+      </header>
+      <div class="chart-wrapper">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Row 4: Explainable AI (XAI) & Fault Event Log -->
+    <section class="split-detail-grid">
+      <!-- Explainable AI Panel -->
+      <article class="cockpit-card xai-card">
+        <header class="card-header">
+          <div class="header-icon-group">
+            <div class="mini-icon icon-cyan">💡</div>
+            <h2 class="card-title">Explainable AI (XAI) Diagnostic Root Cause</h2>
+          </div>
+          <span class="card-badge badge-cyan">Baseline Deviation Engine</span>
+        </header>
+        <div class="xai-body">
+          <p class="xai-intro">
+            Deviations compared against healthy baseline (<span id="baseline-summary">T: 36.5°C &bull; Vrms: 0.18g &bull; I: 0.48A</span>):
+          </p>
+          <div class="xai-deltas-grid">
+            <div class="delta-box" id="delta-box-temp">
+              <span class="delta-label">Temperature</span>
+              <strong id="delta-val-temp" class="delta-num">+0%</strong>
+            </div>
+            <div class="delta-box" id="delta-box-vib">
+              <span class="delta-label">Vibration RMS</span>
+              <strong id="delta-val-vib" class="delta-num">+0%</strong>
+            </div>
+            <div class="delta-box" id="delta-box-peak">
+              <span class="delta-label">Vibration Peak</span>
+              <strong id="delta-val-peak" class="delta-num">+0%</strong>
+            </div>
+            <div class="delta-box" id="delta-box-curr">
+              <span class="delta-label">Current Draw</span>
+              <strong id="delta-val-curr" class="delta-num">+0%</strong>
+            </div>
+          </div>
+          <div class="xai-explanations-list-wrapper">
+            <h3 class="sub-heading">Model Diagnostic Explanations:</h3>
+            <ul id="explanation-list" class="explanation-list">
+              <li>Awaiting live telemetry stream...</li>
+            </ul>
+          </div>
+        </div>
+      </article>
+
+      <!-- Fault History & Blackbox Log -->
+      <article class="cockpit-card history-card">
+        <header class="card-header">
+          <div class="header-icon-group">
+            <div class="mini-icon icon-purple">📜</div>
+            <h2 class="card-title">Safety Event & Fault Blackbox Log</h2>
+          </div>
+          <span id="log-count-badge" class="card-badge">0 Events</span>
+        </header>
+        <div class="history-body">
+          <div class="log-scroll-area">
+            <ul id="fault-log" class="fault-log-list">
+              <li class="empty-log-item">No safety infractions or trip events recorded.</li>
+            </ul>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Row 4.5: AI Defect Diagnosis & Recommended Remedies -->
+    <section class="cockpit-card diagnosis-card">
+      <header class="card-header chart-header">
+        <div class="chart-header-left">
+          <div class="header-icon-group">
+            <div class="mini-icon icon-green">🤖</div>
+            <h2 class="card-title">AI Defect Diagnosis &amp; Recommended Remedies</h2>
+          </div>
+          <span class="card-subtitle">Hybrid engine: calibrated classifier confidence + physics-based signal corroboration + maintenance knowledge base</span>
+        </div>
+        <span id="diag-band-chip" class="card-badge badge-cyan">Awaiting Telemetry</span>
+      </header>
+      <div class="diagnosis-body">
+        <div class="diagnosis-left">
+          <h3 class="sub-heading">Root Cause Analysis</h3>
+          <p id="diagnosis-cause" class="diagnosis-cause">Awaiting first telemetry window&hellip;</p>
+          <div class="diag-confidence-row">
+            <div class="progress-track">
+              <div id="diag-confidence-fill" class="progress-fill" style="width: 0%;"></div>
+            </div>
+            <strong id="diag-confidence-val" class="diag-confidence-val">--</strong>
+          </div>
+          <ul id="reason-list" class="explanation-list reason-list">
+            <li>Root-cause evidence will appear once telemetry streams in.</li>
+          </ul>
+        </div>
+        <div class="diagnosis-right">
+          <h3 class="sub-heading">Recommended Remedies</h3>
+          <ol id="remedy-list" class="remedy-list">
+            <li class="empty-log-item">No remediation required while the machine is healthy.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 5: Hardware Digital Twin Simulator & Manual Actuation Controls -->
+    <section class="controls-grid">
+      <!-- Digital Twin Simulator Controls -->
+      <article class="cockpit-card sim-card">
+        <header class="card-header">
+          <div class="header-icon-group">
+            <div class="mini-icon icon-amber">🧪</div>
+            <h2 class="card-title">Digital Twin & Fault Injection Simulator</h2>
+          </div>
+          <span class="card-badge badge-amber">Interactive Testbench</span>
+        </header>
+        <div class="sim-content">
+          <p class="sim-desc">
+            Instantly simulate real-world hardware failure modes to test AI classification, explainability, and automatic relay cutoffs in real time:
+          </p>
+          <div class="fault-scenario-buttons">
+            <button class="btn-scenario btn-scenario-normal active" data-mode="NORMAL" type="button">
+              <span class="btn-scenario-icon">🟢</span>
+              <span class="btn-scenario-title">Nominal</span>
+              <span class="btn-scenario-desc">Normal operation</span>
+            </button>
+            <button class="btn-scenario btn-scenario-imbalance" data-mode="IMBALANCE" type="button">
+              <span class="btn-scenario-icon">🔄</span>
+              <span class="btn-scenario-title">Imbalance</span>
+              <span class="btn-scenario-desc">Eccentric mass on shaft</span>
+            </button>
+            <button class="btn-scenario btn-scenario-overload" data-mode="OVERLOAD" type="button">
+              <span class="btn-scenario-icon">⚙️</span>
+              <span class="btn-scenario-title">Overload</span>
+              <span class="btn-scenario-desc">High mechanical friction</span>
+            </button>
+            <button class="btn-scenario btn-scenario-overheat" data-mode="OVERHEATING" type="button">
+              <span class="btn-scenario-icon">🔥</span>
+              <span class="btn-scenario-title">Overheating</span>
+              <span class="btn-scenario-desc">Thermal cooling failure</span>
+            </button>
+            <button class="btn-scenario btn-scenario-imbalance" data-mode="BEARING_INNER" type="button">
+              <span class="btn-scenario-icon">🟥</span>
+              <span class="btn-scenario-title">Bearing Inner</span>
+              <span class="btn-scenario-desc">Inner-race spall impacts</span>
+            </button>
+            <button class="btn-scenario btn-scenario-imbalance" data-mode="BEARING_OUTER" type="button">
+              <span class="btn-scenario-icon">🟧</span>
+              <span class="btn-scenario-title">Bearing Outer</span>
+              <span class="btn-scenario-desc">Outer-race defect (BPFO)</span>
+            </button>
+            <button class="btn-scenario btn-scenario-overload" data-mode="MISALIGNMENT" type="button">
+              <span class="btn-scenario-icon">↔️</span>
+              <span class="btn-scenario-title">Misalignment</span>
+              <span class="btn-scenario-desc">Offset shaft / coupling</span>
+            </button>
+            <button class="btn-scenario btn-scenario-critical" data-mode="CRITICAL" type="button">
+              <span class="btn-scenario-icon">💥</span>
+              <span class="btn-scenario-title">Critical</span>
+              <span class="btn-scenario-desc">Bearing seizure / trip test</span>
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <!-- Actuation & Manual Override Station -->
+      <article class="cockpit-card actuation-card">
+        <header class="card-header">
+          <div class="header-icon-group">
+            <div class="mini-icon icon-red">🛑</div>
+            <h2 class="card-title">Actuator & Emergency Control Station</h2>
+          </div>
+          <span class="card-badge badge-red">Safety Overrides</span>
+        </header>
+        <div class="actuation-content">
+          <p class="actuation-desc">
+            Directly override physical relay contacts via MQTT. Critical safety cutoffs latch automatically and require Manual Reset to re-energize:
+          </p>
+          <div class="actuator-actions">
+            <button id="btn-emergency-stop" class="act-btn btn-estop" type="button">
+              <span class="btn-icon">🛑</span>
+              <span class="btn-text">
+                <strong>EMERGENCY CUTOFF</strong>
+                <small>Disconnect Relay (Relay OFF)</small>
+              </span>
+            </button>
+            <button id="btn-manual-reset" class="act-btn btn-reset" type="button">
+              <span class="btn-icon">🔄</span>
+              <span class="btn-text">
+                <strong>MANUAL RESET</strong>
+                <small>Clear Latches & Re-engage</small>
+              </span>
+            </button>
+            <button id="btn-relay-on" class="act-btn btn-on" type="button">
+              <span class="btn-icon">⚡</span>
+              <span class="btn-text">
+                <strong>FORCE RELAY ON</strong>
+                <small>Normal Motor Start</small>
+              </span>
+            </button>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>AIoT Predictive Safety System &bull; Sensor Fusion (MPU6050 + DS18B20 + ACS712) &bull; Edge Inference &bull; Autonomous Actuation Protection</p>
+  </footer>
+
+  <!-- Dashboard Controller Script -->
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

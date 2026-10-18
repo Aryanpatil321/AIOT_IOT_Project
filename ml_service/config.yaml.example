@@ -1,0 +1,94 @@
+# AIoT Predictive Safety System - ML Service Configuration
+# Copy this to config.yaml and update values for your setup
+
+# MQTT Broker Configuration
+mqtt:
+  broker_host: "localhost"  # or your PC IP (e.g., 192.168.1.100)
+  broker_port: 1883
+  client_id: "ml-inference-service"
+  keepalive: 60
+  qos: 0
+  
+# MQTT Topics
+topics:
+  sensors: "machine/sensors"
+  prediction: "machine/prediction"
+  command: "machine/command"
+  status: "machine/status"
+  alerts: "machine/alerts"
+
+# Model Configuration
+model:
+  model_path: "../models/rf_model.joblib"
+  feature_names_path: "../models/feature_names.json"
+  metrics_path: "../models/metrics.json"
+  class_profiles_path: "../models/class_profiles.json"
+  
+  # Model parameters
+  random_state: 42
+  n_estimators: 100
+  max_depth: 10
+  min_samples_split: 5
+  min_samples_leaf: 2
+  
+  # Probability calibration (makes reported confidences trustworthy)
+  calibrated: true
+  calibration_cv: 5
+  
+  # Feature order (must match ESP32 firmware)
+  features:
+    - temperature
+    - vibration_RMS
+    - vibration_peak
+    - current
+
+# Class Labels
+classes:
+  - NORMAL
+  - OVERLOAD
+  - IMBALANCE
+  - BEARING_INNER
+  - BEARING_OUTER
+  - MISALIGNMENT
+  - OVERHEATING
+  - CRITICAL
+
+# Inference Settings
+inference:
+  window_size: 5  # Number of consecutive sensor readings to buffer (for smoothing)
+  prediction_interval_ms: 500  # Minimum interval between predictions
+  
+# Safety Thresholds
+safety:
+  # Confidence thresholds
+  warn_confidence_min: 0.70  # Below this, don't alert
+  critical_confidence_min: 0.80  # Minimum confidence for relay cutoff
+  
+  # Debounce & Hysteresis
+  critical_consecutive_required: 2  # Consecutive CRITICAL predictions before action
+  warn_consecutive_required: 1      # Consecutive warnings for alert
+  
+  # Cooldown
+  cooldown_seconds_after_cutoff: 30  # Prevent immediate re-activation
+  command_cooldown_ms: 1000          # Min time between commands
+  
+  # Health Score Calculation
+  health_penalty_critical: 40
+  health_penalty_overheating: 20
+  health_penalty_overload: 15
+  health_penalty_imbalance: 15
+  health_floor_min: 5  # Minimum health score on severe fault
+
+# Data Collection
+data_collection:
+  save_raw: true
+  raw_data_dir: "../data/raw"
+  processed_data_dir: "../data/processed"
+  auto_label: false  # Set to true only in controlled test scenarios
+  csv_filename_prefix: "machine_data"
+  
+# Explainability Settings
+explainability:
+  baseline_window_size: 20  # Number of NORMAL samples for baseline calculation
+  min_delta_percent: 5      # Only show changes >= 5%
+  include_feature_importance: true
