@@ -74,6 +74,14 @@ const els = {
   btnManualReset: document.getElementById("btn-manual-reset"),
   btnRelayOn: document.getElementById("btn-relay-on"),
 
+  btnEnableSound: document.getElementById("btn-enable-sound"),
+  btnEnableSoundLabel: document.getElementById("btn-enable-sound-label"),
+  btnTestSound: document.getElementById("btn-test-sound"),
+  btnMuteSound: document.getElementById("btn-mute-sound"),
+  btnMuteSoundLabel: document.getElementById("btn-mute-sound-label"),
+  audioStatus: document.getElementById("audio-status"),
+  audioFlash: document.getElementById("audio-flash"),
+
   scenarioButtons: Array.from(document.querySelectorAll(".btn-scenario")),
 };
 
@@ -532,6 +540,103 @@ function activateScenarioButton(mode) {
 }
 
 // ---------------------------------------------------------------------------
+// Browser sound alerts (window.AudioAlerts from audio-alert.js)
+// Pure notification channel: muting/disabling audio never affects ML
+// inference, MQTT, relay safety, logging or the visual alert stack.
+// ---------------------------------------------------------------------------
+let audioControlsBound = false;
+let audioFlashTimer = null;
+let audioAttentionTimer = null;
+
+function renderAudioStatus(status) {
+  if (!status) return;
+  const enabled = !!status.enabled;
+  if (els.audioStatus) {
+    els.audioStatus.textContent = status.message || "Sound: Not enabled";
+    els.audioStatus.className = "audio-status audio-status-" + (status.state || "off");
+    els.audioStatus.title = status.error || status.message || "";
+  }
+  if (els.btnEnableSound) {
+    els.btnEnableSound.hidden = enabled;
+    els.btnEnableSound.disabled = status.state === "unsupported";
+    els.btnEnableSound.setAttribute("aria-pressed", String(enabled));
+    if (els.btnEnableSoundLabel) {
+      els.btnEnableSoundLabel.textContent = status.pending ? "Restore Sound Alerts" : "Enable Sound Alerts";
+    }
+  }
+  if (els.btnTestSound) els.btnTestSound.hidden = !enabled;
+  if (els.btnMuteSound) {
+    els.btnMuteSound.hidden = !enabled;
+    els.btnMuteSound.setAttribute("aria-pressed", String(!!status.muted));
+    if (els.btnMuteSoundLabel) els.btnMuteSoundLabel.textContent = status.muted ? "Unmute" : "Mute";
+  }
+}
+
+// Concise visual confirmation that an anomaly decision produced an audio event
+// (always shown; appends "(sound off)" when muted/disabled/unsupported).
+function showAudioFlash(alert) {
+  if (!els.audioFlash || !alert) return;
+  const crit = alert.severity === "CRITICAL";
+  const fault = alert.fault && alert.fault !== "ANOMALY" ? " \u2014 " + alert.fault : "";
+  els.audioFlash.textContent =
+    (crit ? "\u26a0 Critical escalation" : "\u26a0 New anomaly") + fault +
+    (alert.audible ? "" : "  (sound off)");
+  els.audioFlash.className = "audio-flash is-visible " + (crit ? "flash-crit" : "flash-warn");
+  if (audioFlashTimer) clearTimeout(audioFlashTimer);
+  audioFlashTimer = setTimeout(() => {
+    els.audioFlash.classList.remove("is-visible");
+  }, 3500);
+
+  // No sound enabled yet: draw attention to the Enable button (visual path stays on)
+  if (!alert.audible && els.btnEnableSound && !els.btnEnableSound.hidden) {
+    els.btnEnableSound.classList.add("audio-btn-attention");
+    if (audioAttentionTimer) clearTimeout(audioAttentionTimer);
+    audioAttentionTimer = setTimeout(() => {
+      els.btnEnableSound.classList.remove("audio-btn-attention");
+    }, 3500);
+  }
+}
+
+function bindAudioControls() {
+  if (audioControlsBound) return; // never register duplicate handlers/engines
+  audioControlsBound = true;
+
+  const engine = window.AudioAlerts;
+  if (!engine) {
+    if (els.audioStatus) {
+      els.audioStatus.textContent = "Sound module unavailable \u2014 visual alerts only";
+      els.audioStatus.className = "audio-status audio-status-unsupported";
+    }
+    if (els.btnEnableSound) els.btnEnableSound.disabled = true;
+    console.warn("[Cockpit] audio-alert.js not loaded; visual alerts remain fully functional.");
+    return;
+  }
+
+  engine.subscribe((event) => {
+    if (!event) return;
+    if (event.type === "status") renderAudioStatus(event.status);
+    else if (event.type === "alert") showAudioFlash(event);
+  });
+  renderAudioStatus(engine.getStatus());
+
+  if (els.btnEnableSound) {
+    els.btnEnableSound.onclick = async () => {
+      const res = await engine.enable({ test: true });
+      if (!res.ok) console.warn("[Cockpit] Sound enable failed:", res.error);
+      renderAudioStatus(engine.getStatus());
+    };
+  }
+  if (els.btnTestSound) {
+    els.btnTestSound.onclick = () => {
+      if (!engine.playTest()) console.warn("[Cockpit] Test tone was not played.");
+    };
+  }
+  if (els.btnMuteSound) {
+    els.btnMuteSound.onclick = () => engine.toggleMute();
+  }
+}
+
+// ---------------------------------------------------------------------------
 // SSE streaming
 // ---------------------------------------------------------------------------
 function initSSE() {
@@ -551,7 +656,12 @@ function initSSE() {
       if (data.sensors && !(Array.isArray(data.history) && data.history.length)) {
         renderSensors(data.sensors);
       }
-      if (data.prediction) renderPrediction(data.prediction);
+      if (data.prediction) {
+        // Snapshot / SSE reconnect: sync the alert tracker SILENTLY so a page
+        // reload never replays an incident that was already active.
+        if (window.AudioAlerts) AudioAlerts.seed(data.prediction);
+        renderPrediction(data.prediction);
+      }
       if (data.status) renderStatus(data.status);
       if (data.sim_state && data.sim_state.mode) {
         activateScenarioButton(data.sim_state.mode);
@@ -565,7 +675,11 @@ function initSSE() {
     try { renderSensors(JSON.parse(e.data)); } catch (_) {}
   });
   es.addEventListener("prediction", (e) => {
-    try { renderPrediction(JSON.parse(e.data)); } catch (_) {}
+    try {
+      const p = JSON.parse(e.data);
+      if (window.AudioAlerts) AudioAlerts.handlePrediction(p);
+      renderPrediction(p);
+    } catch (_) {}
   });
   es.addEventListener("status", (e) => {
     try { renderStatus(JSON.parse(e.data)); } catch (_) {}
@@ -595,6 +709,7 @@ function initSSE() {
         detail: a.msg || "",
         confidence: a.confidence,
       });
+      if (window.AudioAlerts) AudioAlerts.handleAlert(a);
     } catch (_) {}
   });
 }
@@ -615,6 +730,7 @@ async function loadFaultLog() {
 
 initChart();
 bindControls();
+bindAudioControls();
 initSSE();
 loadFaultLog();
 setInterval(markPredictionStale, 2000);

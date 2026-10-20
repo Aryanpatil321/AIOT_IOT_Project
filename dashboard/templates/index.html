@@ -60,6 +60,21 @@
     </div>
 
     <div class="header-right">
+      <div class="audio-controls" role="group" aria-label="Dashboard sound alerts">
+        <button id="btn-enable-sound" class="audio-btn audio-btn-enable" type="button" aria-pressed="false">
+          <span class="audio-btn-icon" aria-hidden="true">🔊</span>
+          <span id="btn-enable-sound-label" class="audio-btn-label">Enable Sound Alerts</span>
+        </button>
+        <button id="btn-test-sound" class="audio-btn audio-btn-test" type="button" hidden>
+          <span class="audio-btn-icon" aria-hidden="true">🎧</span>
+          <span class="audio-btn-label">Test</span>
+        </button>
+        <button id="btn-mute-sound" class="audio-btn audio-btn-mute" type="button" aria-pressed="false" hidden>
+          <span class="audio-btn-icon" aria-hidden="true">🔇</span>
+          <span id="btn-mute-sound-label" class="audio-btn-label">Mute</span>
+        </button>
+        <span id="audio-status" class="audio-status audio-status-off" role="status" aria-live="polite">Sound: Not enabled</span>
+      </div>
       <div id="connection-pill" class="status-pill status-pill-neutral">
         <span class="pulse-dot"></span>
         <span id="connection-text">Connecting...</span>
@@ -482,6 +497,12 @@
   <footer class="app-footer">
     <p>AIoT Predictive Safety System &bull; Sensor Fusion (MPU6050 + DS18B20 + ACS712) &bull; Edge Inference &bull; Autonomous Actuation Protection</p>
   </footer>
+
+  <!-- Transient visual flash shown when an anomaly/critical audio event fires -->
+  <div id="audio-flash" class="audio-flash" role="status" aria-live="polite"></div>
+
+  <!-- Browser audio alert engine (Web Audio API) - must load before the controller -->
+  <script src="/static/js/audio-alert.js"></script>
 
   <!-- Dashboard Controller Script -->
   <script src="/static/js/dashboard.js"></script>

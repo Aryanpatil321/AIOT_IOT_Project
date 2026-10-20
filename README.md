@@ -94,7 +94,8 @@ AIOT&IOT/
 ├── docs/                            # Documentation
 │   ├── wiring.md
 │   ├── mqtt_topics.md
-│   └── defect_ai.md                # Diagnosis AI design & knowledge base
+│   ├── defect_ai.md                # Diagnosis AI design & knowledge base
+│   └── audio_alerts.md             # Browser laptop-speaker anomaly alerts
 ├── scripts/                         # Utility scripts
 └── mosquitto/                        # MQTT broker config (optional)
 ```
@@ -128,6 +129,7 @@ AIOT&IOT/
 - **Local Safety Fallback**: ESP32 can fallback to rule-based cutoff if ML service disconnects
 - **Fail-Safe Boot**: Relay starts in OFF state until system is stable
 - **Configurable Thresholds**: Confidence thresholds and cooldown periods
+- **Browser Audio Alerts**: Optional software-only laptop speaker warnings/critical tones (Web Audio API, edge-triggered with incident dedup) — see `docs/audio_alerts.md`; never required for safety actuation
 - **Power Separation**: Designed for separate 5V supply for motor/relay (documented in wiring)
 
 ## Development Phases
