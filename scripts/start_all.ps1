@@ -1,5 +1,6 @@
 # AIoT Predictive Safety System - Run ML inference + Dashboard (Windows)
-# Assumes Mosquitto is already running and a trained model exists.
+# Start the broker first: scripts\start_mosquitto.ps1 (Mosquitto or bundled fallback).
+# Assumes a trained model exists (see ml_service/train_model.py).
 
 $root = Split-Path -Parent $PSScriptRoot
 $mlDir = Join-Path $root "ml_service"

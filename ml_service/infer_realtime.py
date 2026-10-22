@@ -136,8 +136,11 @@ class InferenceService:
         if self.critical_latched:
             print("[MQTT] Safety latch was set; waiting for MANUAL_RESET before re-arming.")
 
-    def _on_disconnect(self, client, userdata, rc, properties=None):
-        print(f"[MQTT] Disconnected (rc={rc}); retrying automatically...")
+    def _on_disconnect(self, client, userdata, *args, **kwargs):
+        # paho 2.x: (client, userdata, flags, reason_code, properties)
+        # paho 1.x: (client, userdata, rc)
+        reason = args[1] if len(args) >= 2 else (args[0] if args else "unknown")
+        print(f"[MQTT] Disconnected ({reason}); retrying automatically...")
 
     def _on_message(self, client, userdata, msg):
         try:

@@ -11,11 +11,48 @@ Validates:
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 import unittest
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+
+
+def _ensure_dashboard_deps() -> None:
+    """Verify needs Flask (dashboard app), which the ML venv does not ship.
+
+    If the current interpreter lacks Flask, re-run this script with the
+    dashboard venv interpreter when available, so the suite works from any
+    activated environment.
+    """
+    try:
+        import flask  # noqa: F401
+        return
+    except ModuleNotFoundError:
+        pass
+
+    if os.environ.get("AIOT_VERIFY_REEXEC") != "1":
+        for candidate in (
+            ROOT_DIR / "dashboard" / ".venv" / "Scripts" / "python.exe",
+            ROOT_DIR / "dashboard" / ".venv" / "bin" / "python",
+        ):
+            if candidate.exists() and candidate.resolve() != Path(sys.executable).resolve():
+                print(f"[verify] Flask not available in this interpreter - re-running with {candidate}")
+                env = dict(os.environ, AIOT_VERIFY_REEXEC="1")
+                raise SystemExit(subprocess.call(
+                    [str(candidate), str(Path(__file__).resolve()), *sys.argv[1:]], env=env
+                ))
+
+    print("[verify] Flask is required (it imports the dashboard app).")
+    print(r"  Run:  .\dashboard\.venv\Scripts\python.exe scripts\verify_system.py")
+    print(r"  Or:   pip install -r dashboard\requirements.txt")
+    raise SystemExit(2)
+
+
+_ensure_dashboard_deps()
+
 sys.path.insert(0, str(ROOT_DIR / "ml_service"))
 sys.path.insert(0, str(ROOT_DIR / "dashboard"))
 

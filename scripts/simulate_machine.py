@@ -15,7 +15,7 @@ Usage:
     python scripts/simulate_machine.py
     python scripts/simulate_machine.py --mode IMBALANCE
     python scripts/simulate_machine.py --mode BEARING_INNER
-    python scripts/simulate_machine.py --http ""        # MQTT only (no HTTP ingest)
+    python scripts/simulate_machine.py --no-http        # MQTT only (no HTTP ingest)
 """
 
 from __future__ import annotations
@@ -120,7 +120,13 @@ class MachineSimulator:
 
     def _init_mqtt(self):
         try:
-            self.mqtt_client = mqtt.Client(client_id="machine-hardware-simulator")
+            try:
+                self.mqtt_client = mqtt.Client(
+                    callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+                    client_id="machine-hardware-simulator",
+                )
+            except (AttributeError, TypeError):  # paho-mqtt 1.x
+                self.mqtt_client = mqtt.Client(client_id="machine-hardware-simulator")
             self.mqtt_client.on_connect = self._on_connect
             self.mqtt_client.on_message = self._on_message
             self.mqtt_client.connect_async(self.broker, self.port, keepalive=60)
@@ -298,10 +304,12 @@ def main():
     parser.add_argument("--broker", default="localhost", help="MQTT Broker host.")
     parser.add_argument("--port", type=int, default=1883, help="MQTT Broker port.")
     parser.add_argument("--http", default="http://localhost:5000/api/telemetry_ingest", help="Dashboard HTTP ingest URL.")
+    parser.add_argument("--no-http", action="store_true", help="Disable HTTP ingest (publish over MQTT only).")
     parser.add_argument("--rate", type=float, default=1.0, help="Publish rate in seconds.")
     args = parser.parse_args()
 
-    sim = MachineSimulator(mode=args.mode, broker=args.broker, port=args.port, http_url=args.http)
+    http_url = "" if args.no_http else args.http
+    sim = MachineSimulator(mode=args.mode, broker=args.broker, port=args.port, http_url=http_url)
     sim.run(interval_sec=args.rate)
 
 

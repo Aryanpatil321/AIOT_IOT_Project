@@ -6,6 +6,15 @@ This document defines all MQTT topics used in the system for communication betwe
 
 **Default Broker:** localhost:1883 (TCP), localhost:9001 (WebSocket for Dashboard)
 
+**Starting the broker:** `.\scripts\start_mosquitto.ps1` — uses Eclipse Mosquitto if installed,
+otherwise it launches the bundled Python MQTT 3.1.1 broker (`scripts/mqtt_broker.py`, `amqtt`)
+with the same ports, anonymous access and topic behavior. Configuration lives in `mosquitto/mosquitto.conf`.
+
+**Watching traffic live:** `python scripts\mqtt_monitor.py` subscribes to `machine/#` and prints
+each message (topic, QoS, size, decoded payload) with a per-topic count every 15 seconds.
+Use `--raw` for full payloads, `--topic "machine/prediction"` to filter, or
+`--broker <ip> --port 1883` for a remote broker.
+
 ## Topic Definitions
 
 ### 1. `machine/sensors` (ESP32 → ML Service → Dashboard)

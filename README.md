@@ -51,9 +51,13 @@ pip install -r ml_service/requirements.txt
 pip install -r dashboard/requirements.txt
 ```
 
-3. **Set up Mosquitto MQTT broker** (local development)
+3. **Start the MQTT broker**: run `.\scripts\start_mosquitto.ps1`
+   - Uses Eclipse Mosquitto when it is installed.
+   - If Mosquitto is not installed (or cannot be downloaded on your network), the script automatically falls back to the bundled pure-Python MQTT 3.1.1 broker (`scripts/mqtt_broker.py`, package `amqtt`) — same TCP port 1883 and WebSocket port 9001, anonymous access for local development.
+   - For ESP32 access from another device, allow inbound TCP 1883 through Windows Firewall when prompted.
 4. **Configure ESP32 firmware**: copy `firmware/src/config.h.example` to `firmware/src/config.h` and set your Wi-Fi SSID/password, MQTT broker address, and calibration constants (`ACS712_VREF_V`, `MPU6050_ACCEL_TO_G`), then flash with PlatformIO
-5. **Run the software demo** (no hardware needed): `python scripts\simulate_machine.py` (simulated telemetry over MQTT/HTTP) + `python dashboard\app.py` (cockpit at http://localhost:5000 — includes a built-in digital twin if the simulator is not running)
+5. **Run the software demo** (no hardware needed): `python scripts\simulate_machine.py` (simulated telemetry over MQTT/HTTP) + `python dashboard\app.py` (cockpit at http://localhost:5000 - includes a built-in digital twin if the simulator is not running)
+6. **Prove MQTT is carrying data** (optional, great for a demo): `python scripts\mqtt_monitor.py` in another terminal - prints every `machine/#` message (topic, QoS size, decoded payload) plus a per-topic summary every 15 s.
 
 See detailed setup in each component's README/config files.
 
